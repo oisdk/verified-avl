@@ -177,11 +177,11 @@ alteredDn :: Inserted k v h -> Altered k v h
 alteredDn (Stay tr) = Sm tr
 alteredDn (Incr tr) = Up tr
 
-alterF :: forall k f v h. (Ord k, Functor f) => k -> (Maybe v -> f (Maybe v)) -> Tree h k v -> f (Altered k v h)
-alterF k f tr = go tr id
+alterF :: forall k f v h x. (Ord k, Functor f) => k -> (Maybe v -> f (Maybe v)) -> Tree h k v -> (Altered k v h -> x) -> f x
+alterF k f tr c' = go tr c'
   where
-    go :: forall ht. Tree ht k v -> (Altered k v ht -> Altered k v h) -> f (Altered k v h)
-    go Leaf c = fmap (maybe (Sm tr) (\v -> c (Up (Node k v O Leaf Leaf)))) (f Nothing)
+    go :: forall ht. Tree ht k v -> (Altered k v ht -> x) -> f x
+    go Leaf c = fmap (maybe (c' (Sm tr)) (\v -> c (Up (Node k v O Leaf Leaf)))) (f Nothing)
     go (Node k' v b l r) c =
         case compare k k' of
             LT ->

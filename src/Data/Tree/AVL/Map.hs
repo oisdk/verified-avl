@@ -84,3 +84,11 @@ instance (Show a, Show b) => Show (Map a b) where
 instance (NFData k, NFData v) => NFData (Map k v) where
     rnf (Map tr) = rnf tr
 
+alterF
+    :: (Ord k, Functor f)
+    => k -> (Maybe v -> f (Maybe v)) -> Map k v -> f (Map k v)
+alterF k f (Map tr) = Tree.alterF k f tr $ \case
+    Tree.Dn tr' -> Map tr'
+    Tree.Sm tr' -> Map tr'
+    Tree.Up tr' -> Map tr'
+
