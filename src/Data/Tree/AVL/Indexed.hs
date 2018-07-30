@@ -1,10 +1,46 @@
-module Data.Tree.AVL.Indexed where
+{-|
+Module      : Data.Tree.AVL.Indexed
+Description : An AVL tree implementation, with verified balancing.
+Copyright   : (c) Donnacha Oisín Kidney, 2018
+License     : MIT
+Maintainer  : mail@doisinkidney.com
+Stability   : experimental
+Portability : GHC
+
+This module provides an implementation of AVL trees, which are
+guaranteed (at compile time) to be balanced. You probably don't want
+to use this module directly, rather you should see "Data.Tree.AVL.Map".
+-}
+
+module Data.Tree.AVL.Indexed
+   ( -- * The Tree Type
+       Tree(..)
+     -- * Insertion
+   , Inserted(..)
+   , rotr
+   , rotl
+   , insertWith
+     -- * Lookup
+   , lookup
+     -- * Deletion
+   , Deleted(..)
+   , deleted
+   , uncons
+   , delete
+     -- * AlterF
+   , Altered(..)
+   , alteredUp
+   , alteredDn
+   , alterF
+   ) where
 
 import Prelude hiding (lookup)
 import Data.Kind
 import Control.DeepSeq
 import Data.Tree.AVL.Height
 
+-- | The AVL Tree. Its type ensure that it's statically
+-- balanced, 
 data Tree :: Height -> Type -> Type -> Type where
         Leaf :: Tree Z k v
         Node :: !k
