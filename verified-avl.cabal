@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 04c73366ab5f55fa55949b198bf7c02a90a10750ddb005d6068dc3e59c0bb93a
+-- hash: d972eef71f1329a848c792ead36010393fae59bda8dfc3cdcd89254403562fee
 
 name:           verified-avl
 version:        0.1.0.0
@@ -41,6 +41,23 @@ library
     , deepseq
   default-language: Haskell2010
 
+test-suite verified-avl-doctests
+  type: exitcode-stdio-1.0
+  main-is: Doctests.hs
+  other-modules:
+      Paths_verified_avl
+  hs-source-dirs:
+      doctests
+  default-extensions: DataKinds KindSignatures GADTs RankNTypes ScopedTypeVariables LambdaCase StandaloneDeriving DeriveFunctor DeriveFoldable DeriveTraversable
+  ghc-options: -Wall -Wno-unticked-promoted-constructors -Wincomplete-uni-patterns -Wincomplete-record-updates -Wredundant-constraints -Wpartial-fields -Wcompat -threaded
+  build-depends:
+      QuickCheck
+    , base >=4.7 && <5
+    , deepseq
+    , doctest
+    , verified-avl
+  default-language: Haskell2010
+
 test-suite verified-avl-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
@@ -53,5 +70,6 @@ test-suite verified-avl-test
   build-depends:
       base >=4.7 && <5
     , deepseq
+    , hedgehog
     , verified-avl
   default-language: Haskell2010

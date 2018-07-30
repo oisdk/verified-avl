@@ -163,3 +163,85 @@ instance (NFData k, NFData v) =>
     rnf Leaf = ()
     rnf (Node k v b l r) =
         rnf k `seq` rnf v `seq` rnf b `seq` rnf l `seq` rnf r
+
+data Altered :: Type -> Type -> Height -> Type where
+        Up :: !(Tree (S n) k v) -> Altered k v n
+        Sm :: !(Tree n k v) -> Altered k v n
+        Dn :: !(Tree n k v) -> Altered k v (S n)
+
+alteredUp :: Inserted k v h -> Altered k v (S h)
+alteredUp (Stay tr) = Dn tr
+alteredUp (Incr tr) = Sm tr
+
+alteredDn :: Inserted k v h -> Altered k v h
+alteredDn (Stay tr) = Sm tr
+alteredDn (Incr tr) = Up tr
+
+alterF :: forall k f v h. (Ord k, Functor f) => k -> (Maybe v -> f (Maybe v)) -> Tree h k v -> f (Altered k v h)
+alterF k f tr = go tr id
+  where
+    go :: forall ht. Tree ht k v -> (Altered k v ht -> Altered k v h) -> f (Altered k v h)
+    go Leaf c = fmap (maybe (Sm tr) (\v -> c (Up (Node k v O Leaf Leaf)))) (f Nothing)
+    go (Node k' v b l r) c =
+        case compare k k' of
+            LT ->
+                go l $
+                c .
+                \case
+                    Sm l' -> Sm (Node k' v b l' r)
+                    Dn l' ->
+                        case b of
+                            L -> Dn (Node k' v O l' r)
+                            O -> Sm (Node k' v R l' r)
+                            R -> alteredUp (rotl k' v l' r)
+                    Up l' ->
+                        case b of
+                            L -> alteredDn (rotr k' v l' r)
+                            O -> Up (Node k' v L l' r)
+                            R -> Sm (Node k' v O l' r)
+            GT ->
+                go r $
+                c .
+                \case
+                    Sm r' -> Sm (Node k' v b l r')
+                    Dn r' ->
+                        case b of
+                            L -> alteredUp (rotr k' v l r')
+                            O -> Sm (Node k' v L l r')
+                            R -> Dn (Node k' v O l r')
+                    Up r' ->
+                        case b of
+                            L -> Sm (Node k' v O l r')
+                            O -> Up (Node k' v R l r')
+                            R -> alteredDn (rotl k' v l r')
+            EQ ->
+                flip fmap (f (Just v)) $
+                c .
+                \case
+                    Just v' -> Sm (Node k' v' b l r)
+                    Nothing ->
+                        case r of
+                            Leaf ->
+                                case b of
+                                    L -> Dn l
+                                    O -> Dn l
+                            Node kr vr br tlr trr ->
+                                case b of
+                                    L ->
+                                        case uncons kr vr br tlr trr of
+                                            (k'',v',Decr r') ->
+                                                alteredUp (rotr k'' v' l r')
+                                            (k'',v',Hold r') ->
+                                                Sm (Node k'' v' L l r')
+                                    O ->
+                                        case uncons kr vr br tlr trr of
+                                            (k'',v',Decr r') ->
+                                                Sm (Node k'' v' L l r')
+                                            (k'',v',Hold r') ->
+                                                Sm (Node k'' v' O l r')
+                                    R ->
+                                        case uncons kr vr br tlr trr of
+                                            (k'',v',Decr r') ->
+                                                Dn (Node k'' v' O l r')
+                                            (k'',v',Hold r') ->
+                                                Sm (Node k'' v' R l r')

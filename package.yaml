@@ -50,3 +50,14 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - verified-avl
+    - hedgehog
+  verified-avl-doctests:
+    main:                Doctests.hs
+    source-dirs:         doctests
+    ghc-options:
+    - -threaded
+    dependencies:
+    - verified-avl
+    - doctest
+    - QuickCheck
+
