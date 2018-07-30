@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c0d92cf1ce209bc14d94b6c4257645542e6b91e2c03fc78d789ac8bdb0737150
+-- hash: 04c73366ab5f55fa55949b198bf7c02a90a10750ddb005d6068dc3e59c0bb93a
 
 name:           verified-avl
 version:        0.1.0.0
@@ -29,14 +29,16 @@ library
   exposed-modules:
       Data.Tree.AVL.Height
       Data.Tree.AVL.Indexed
+      Data.Tree.AVL.Map
   other-modules:
       Paths_verified_avl
   hs-source-dirs:
       src
-  default-extensions: DataKinds KindSignatures GADTs RankNTypes ScopedTypeVariables LambdaCase
+  default-extensions: DataKinds KindSignatures GADTs RankNTypes ScopedTypeVariables LambdaCase StandaloneDeriving DeriveFunctor DeriveFoldable DeriveTraversable
   ghc-options: -Wall -Wno-unticked-promoted-constructors -Wincomplete-uni-patterns -Wincomplete-record-updates -Wredundant-constraints -Wpartial-fields -Wcompat
   build-depends:
       base >=4.7 && <5
+    , deepseq
   default-language: Haskell2010
 
 test-suite verified-avl-test
@@ -46,9 +48,10 @@ test-suite verified-avl-test
       Paths_verified_avl
   hs-source-dirs:
       test
-  default-extensions: DataKinds KindSignatures GADTs RankNTypes ScopedTypeVariables LambdaCase
+  default-extensions: DataKinds KindSignatures GADTs RankNTypes ScopedTypeVariables LambdaCase StandaloneDeriving DeriveFunctor DeriveFoldable DeriveTraversable
   ghc-options: -Wall -Wno-unticked-promoted-constructors -Wincomplete-uni-patterns -Wincomplete-record-updates -Wredundant-constraints -Wpartial-fields -Wcompat -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , deepseq
     , verified-avl
   default-language: Haskell2010

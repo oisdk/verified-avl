@@ -2,29 +2,34 @@ module Data.Tree.AVL.Indexed where
 
 import Prelude hiding (lookup)
 import Data.Kind
-
+import Control.DeepSeq
 import Data.Tree.AVL.Height
 
-data Tree :: Type -> Type -> Height -> Type where
-        Leaf :: Tree k v Z
+data Tree :: Height -> Type -> Type -> Type where
+        Leaf :: Tree Z k v
         Node :: !k
              -> v
              -> !(Balance lh rh h)
-             -> !(Tree k v lh)
-             -> !(Tree k v rh)
-             -> Tree k v (S h)
+             -> !(Tree lh k v)
+             -> !(Tree rh k v)
+             -> Tree (S h) k v
+
+deriving instance Functor     (Tree h k)
+deriving instance Foldable    (Tree h k)
+deriving instance Traversable (Tree h k)
+deriving instance (Show k, Show v) => Show (Tree h k v)
 
 data Inserted :: Type -> Type -> Height -> Type where
-        Stay :: !(Tree k v n) -> Inserted k v n
-        Incr :: !(Tree k v (S n)) -> Inserted k v n
+        Stay :: !(Tree n k v) -> Inserted k v n
+        Incr :: !(Tree (S n) k v) -> Inserted k v n
 
-rotr :: k -> v -> Tree k v (S (S rh)) -> Tree k v rh -> Inserted k v (S (S rh))
+rotr :: k -> v -> Tree (S (S rh)) k v -> Tree rh k v -> Inserted k v (S (S rh))
 rotr x xv (Node y yv L a b) c = Stay (Node y yv O a (Node x xv O b c))
 rotr x xv (Node y yv O a b) c = Incr (Node y yv R a (Node x xv L b c))
 rotr x xv (Node y yv R a (Node z zv bl b c)) d =
     Stay (Node z zv O (Node y yv (balr bl) a b) (Node x xv (ball bl) c d))
 
-rotl :: k -> v -> Tree k v rh -> Tree k v (S (S rh)) -> Inserted k v (S (S rh))
+rotl :: k -> v -> Tree rh k v -> Tree (S (S rh)) k v -> Inserted k v (S (S rh))
 rotl x xv c (Node y yv R b a) = Stay (Node y yv O (Node x xv O c b) a)
 rotl x xv c (Node y yv O b a) = Incr (Node y yv L (Node x xv R c b) a)
 rotl x xv d (Node y yv L (Node z zv bl c b) a) =
@@ -32,7 +37,7 @@ rotl x xv d (Node y yv L (Node z zv bl c b) a) =
 
 insertWith
     :: Ord k
-    => (v -> v -> v) -> k -> v -> Tree k v h -> Inserted k v h
+    => (v -> v -> v) -> k -> v -> Tree h k v -> Inserted k v h
 insertWith _ v vc Leaf = Incr (Node v vc O Leaf Leaf)
 insertWith f v vc (Node k kc bl tl tr) =
     case compare v k of
@@ -54,7 +59,7 @@ insertWith f v vc (Node k kc bl tl tr) =
                         O -> Incr (Node k kc R tl tr')
                         R -> rotl k kc tl tr'
 
-lookup :: Ord k => k -> Tree k v h -> Maybe v
+lookup :: Ord k => k -> Tree h k v -> Maybe v
 lookup _ Leaf = Nothing
 lookup k (Node v vc _ tl tr) =
     case compare k v of
@@ -63,8 +68,8 @@ lookup k (Node v vc _ tl tr) =
         GT -> lookup k tr
 
 data Deleted :: Type -> Type -> Height -> Type where
-        Hold :: !(Tree k v n) -> Deleted k v n
-        Decr :: !(Tree k v n) -> Deleted k v (S n)
+        Hold :: !(Tree n k v) -> Deleted k v n
+        Decr :: !(Tree n k v) -> Deleted k v (S n)
 
 deleted :: Inserted k v n -> Deleted k v (S n)
 deleted (Stay x) = Decr x
@@ -74,8 +79,8 @@ uncons
     :: k
     -> v
     -> Balance lh rh h
-    -> Tree k v lh
-    -> Tree k v rh
+    -> Tree lh k v
+    -> Tree rh k v
     -> (k, v, Deleted k v (S h))
 uncons (k' :: k) (v' :: v) bl' tl' tr' = go k' v' bl' tl' tr' id
   where
@@ -84,8 +89,8 @@ uncons (k' :: k) (v' :: v) bl' tl' tr' = go k' v' bl' tl' tr' id
            k
         -> v
         -> Balance lh rh h
-        -> Tree k v lh
-        -> Tree k v rh
+        -> Tree lh k v
+        -> Tree rh k v
         -> (Deleted k v (S h) -> x)
         -> (k, v, x)
     go k v O Leaf tr c = (k, v, c (Decr tr))
@@ -106,7 +111,7 @@ uncons (k' :: k) (v' :: v) bl' tl' tr' = go k' v' bl' tl' tr' id
             Decr ntl -> c (Decr (Node k v O ntl tr))
             Hold ntl -> c (Hold (Node k v L ntl tr))
 
-delete :: Ord k => k -> Tree k v h -> Deleted k v h
+delete :: Ord k => k -> Tree h k v -> Deleted k v h
 delete _ Leaf = Hold Leaf
 delete k (Node k' v b tl tr) =
     case compare k k' of
@@ -152,3 +157,9 @@ delete k (Node k' v b tl tr) =
                                     Decr (Node k'' v' O tl tr')
                                 (k'',v',Hold tr') ->
                                     Hold (Node k'' v' R tl tr')
+
+instance (NFData k, NFData v) =>
+         NFData (Tree h k v) where
+    rnf Leaf = ()
+    rnf (Node k v b l r) =
+        rnf k `seq` rnf v `seq` rnf b `seq` rnf l `seq` rnf r
